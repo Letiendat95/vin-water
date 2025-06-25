@@ -1,0 +1,315 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace WindowsForms_ASM_2
+{
+    public partial class ManageBill : Form
+    {
+        string[] names = new string[100];
+        int[] types = new int[100];
+        double[] lastMonth = new double[100];
+        double[] thisMonth = new double[100];
+        int[] numberPeople = new int[100];
+        double[] usages = new double[100];
+        double[] totalCosts = new double[100];
+
+        int n = 0;
+        public ManageBill()
+        {
+            InitializeComponent();
+            Type.Items.AddRange(new string[]
+            {
+                "Household",
+                "Administrative agency",
+                "Production units",
+                "Business services"
+            });
+            Type.SelectedIndex = 0;
+        }
+
+        public void Display()
+        {
+            dgvBill.DataSource = null;
+
+            var bills = new DataTable();
+            bills.Columns.Add("Name");
+            bills.Columns.Add("Last Month");
+            bills.Columns.Add("This Month");
+            bills.Columns.Add("Usage");
+            bills.Columns.Add("Total Cost");
+
+            for (int i = 0; i < n; i++)
+            {
+                bills.Rows.Add(names[i], lastMonth[i], thisMonth[i], usages[i], totalCosts[i]);
+            }
+
+            dgvBill.DataSource = bills;
+            dgvBill.Refresh();
+        }
+        public void ClearData()
+        {
+            textName.Text = "";
+            textLastWater.Text = "";
+            textThisWater.Text = "";
+            textNumber.Text = "";
+            Type.Text = "";
+            Display();
+        }
+
+        private void Type_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int selectedIndex = Type.SelectedIndex;
+
+            if (selectedIndex == 0)
+            {
+                lbNumber.Visible = true;
+                textNumber.Visible = true;
+            }
+            else
+            {
+                lbNumber.Visible = false;
+                textNumber.Visible = false;
+            }
+        }
+
+        private double CalculateBill(int customerType, double usageTotal, out double envFee)
+        {
+            double unitPrice = 0;
+            envFee = 0;
+
+            if (customerType == 0) // Household
+            {
+                int numPeople = int.Parse(textNumber.Text);
+                double average = usageTotal / numPeople;
+
+                if (average <= 10)
+                {
+                    unitPrice = 5973;
+                    envFee = 597.30;
+                }
+                else if (average <= 20)
+                {
+                    unitPrice = 7052;
+                    envFee = 705.20;
+                }
+                else if (average <= 30)
+                {
+                    unitPrice = 8699;
+                    envFee = 869.90;
+                }
+                else
+                {
+                    unitPrice = 15929;
+                    envFee = 1592.90;
+                }
+            }
+            else if (customerType == 1)
+            {
+                unitPrice = 9955;
+                envFee = 995.50;
+            }
+            else if (customerType == 2)
+            {
+                unitPrice = 11615;
+                envFee = 1161.50;
+            }
+            else if (customerType == 3)
+            {
+                unitPrice = 19930;
+                envFee = 1993.00;
+            }
+
+            double subtotal = usageTotal * unitPrice;
+            double vat = (subtotal + envFee) * 0.10;
+            return subtotal + envFee + vat;
+        }
+
+
+
+
+        private void btnExport_Click(object sender, EventArgs e)
+        {
+            string customerName = textName.Text;
+            double waterMeterLastMonth = double.Parse(textLastWater.Text);
+            double waterMeterThisMonth = double.Parse(textThisWater.Text);
+            int customerType = Type.SelectedIndex;
+            double usageTotal = waterMeterThisMonth - waterMeterLastMonth;
+            double totalBill = CalculateBill(customerType, usageTotal, out double envFee);
+
+            MessageBox.Show("Customer name: " + customerName + "\n" + "Usage: " + usageTotal + " m3\n" + "Bill: " + totalBill.ToString("N2") + " VND");
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            string customerName = textName.Text;
+            double waterMeterLastMonth = double.Parse(textLastWater.Text);
+            double waterMeterThisMonth = double.Parse(textThisWater.Text);
+            int customerType = Type.SelectedIndex;
+            double usageTotal = waterMeterThisMonth - waterMeterLastMonth;
+            double totalBill = CalculateBill(customerType, usageTotal, out double envFee);
+
+            names[n] = customerName;
+            types[n] = customerType;
+            lastMonth[n] = waterMeterLastMonth;
+            thisMonth[n] = waterMeterThisMonth;
+            numberPeople[n] = (customerType == 0) ? int.Parse(textNumber.Text) : 0;
+            usages[n] = usageTotal;
+            totalCosts[n] = totalBill;
+            n++;
+
+            Display();
+            MessageBox.Show("Saved successfully");
+            ClearData();
+        }
+        int index = -1;
+
+        private void dgvBill_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+           
+        }
+
+        private void bntExit_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("Do you want to edit", "Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                string customerName = textName.Text;
+                double waterMeterLastMonth = double.Parse(textLastWater.Text);
+                double waterMeterThisMonth = double.Parse(textThisWater.Text);
+                int customerType = Type.SelectedIndex;
+                double usageTotal = waterMeterThisMonth - waterMeterLastMonth;
+                double totalBill = CalculateBill(customerType, usageTotal, out double envFee);
+
+                names[index] = customerName;
+                types[index] = customerType;
+                lastMonth[index] = waterMeterLastMonth;
+                thisMonth[index] = waterMeterThisMonth;
+                usages[index] = usageTotal;
+                totalCosts[index] = totalBill;
+                numberPeople[index] = (customerType == 0) ? int.Parse(textNumber.Text) : 0;
+
+                Display();
+                MessageBox.Show("Updated successfully!");
+                ClearData();
+            }
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("Do you want to delete?", "Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                for (int i = index; i < n - 1; i++)
+                {
+                    names[i] = names[i + 1];
+                    types[i] = types[i + 1];
+                    lastMonth[i] = lastMonth[i + 1];
+                    thisMonth[i] = thisMonth[i + 1];
+                    numberPeople[i] = numberPeople[i + 1];
+                    usages[i] = usages[i + 1];
+                    totalCosts[i] = totalCosts[i + 1];
+                }
+                n--;
+                Display();
+                MessageBox.Show("Deleted succsessfully!");
+                ClearData();
+            }
+
+        }
+
+        private void Swap(int i, int j)
+        {
+            (names[i], names[j]) = (names[j], names[i]);
+            (types[i], types[j]) = (types[j], types[i]);
+            (lastMonth[i], lastMonth[j]) = (lastMonth[j], lastMonth[i]);
+            (thisMonth[i], thisMonth[j]) = (thisMonth[j], thisMonth[i]);
+            (numberPeople[i], numberPeople[j]) = (numberPeople[j], numberPeople[i]);
+            (usages[i], usages[j]) = (usages[j], usages[i]);
+            (totalCosts[i], totalCosts[j]) = (totalCosts[j], totalCosts[i]);
+
+
+
+        }
+
+        private void btnASC_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < n - 1; i++)
+            {
+                for(int j = 0; j < n - i - 1; j++)
+                {
+                    if (totalCosts[j] > totalCosts[j + 1])
+                    {
+                        Swap(j, j + 1);
+                    }
+                }
+            }
+            Display();
+        }
+
+        private void btnDesc_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < n - 1; i++)
+            {
+                for (int j = 0; j < n - i - 1; j++)
+                {
+                    if (totalCosts[j]< totalCosts[j + 1])
+                    {
+                        Swap(j, j + 1);
+                    }
+                }
+            }
+            Display();
+        }
+
+        private void textSeachName_TextChanged(object sender, EventArgs e)
+        {
+            string textseach = textSeachName.Text;
+            if (!string.IsNullOrEmpty(textseach))
+            {
+                var filteredBills = new DataTable();
+                filteredBills.Columns.Add("Name");
+                filteredBills.Columns.Add("Last Month");
+                filteredBills.Columns.Add("This Month");
+                filteredBills.Columns.Add("Usage");
+                filteredBills.Columns.Add("Total Cost");
+
+                for (int i = 0; i < n; i++)
+                {
+                    if (names[i] != null && names[i].IndexOf(textseach, StringComparison.OrdinalIgnoreCase) != -1)
+                    {
+                        filteredBills.Rows.Add(names[i], lastMonth[i], thisMonth[i], usages[i], totalCosts[i]);
+                    }
+                }
+
+                dgvBill.DataSource = filteredBills;
+            }
+            else
+            {
+                Display();
+            }
+        }
+
+        private void bntRefresh_Click(object sender, EventArgs e)
+        {
+            ClearData();
+            Display();
+        }
+
+        private void dgvBill_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            index = e.RowIndex;
+            textName.Text = names[index];
+            Type.SelectedIndex = types[index];
+            textLastWater.Text = lastMonth[index].ToString();
+            textThisWater.Text = thisMonth[index].ToString();
+            textNumber.Text = (types[index] == 0) ? numberPeople[index].ToString() : "";
+        }
+
+    }
+}
